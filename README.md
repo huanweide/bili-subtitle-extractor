@@ -1,3 +1,9 @@
+<!-- badges -->
+[![License](https://img.shields.io/github/license/huanweide/bili-subtitle-extractor)](LICENSE)
+[![CI](https://github.com/huanweide/bili-subtitle-extractor/actions/workflows/ci.yml/badge.svg)](https://github.com/huanweide/bili-subtitle-extractor/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/huanweide/bili-subtitle-extractor)](https://github.com/huanweide/bili-subtitle-extractor/stargazers)
+<!-- /badges -->
+
 # B站字幕提取工具
 
 输入 B站 BV 号，自动下载字幕。有字幕直接提取，无字幕用 AI 语音转文字生成。
