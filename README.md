@@ -6,6 +6,8 @@
 
 # B站字幕提取工具
 
+> 姊妹项目：本工具是「命令行批量下载 / AI 语音转文字」形态。如果你想要**在浏览器里点一下就提取字幕**（零配置、无需 Key），请用 [bili-subtitle](https://github.com/huanweide/bili-subtitle)（篡改猴插件版）。
+
 输入 B站 BV 号，自动下载字幕。有字幕直接提取，无字幕用 AI 语音转文字生成。
 
 **输出 SRT + TXT 双格式**，纯 Python 标准库，零强制依赖。
