@@ -541,16 +541,15 @@ def extract_subtitle(
             "extractor_version": __version__,
         }
         out = save_output(output_dir, bvid, part_title, page_num, srt, txt, metadata)
+        if cache:
+            cache.set(bvid, cid, {**metadata, "output_dir": out})
         results.append((metadata, p))
         print(f"  ✓ 保存到: {out}")
 
     print(f"\n{'='*50}")
     print(f"完成! 共处理 {len(results)} 个分P")
     for meta, _ in results:
-        d = meta["output_dir"] if "output_dir" in meta else os.path.join(
-            output_dir, f"{bvid}_p{meta['page']}_{safe_filename(meta['part'])}"
-        )
-        print(f"  {d}")
+        print(f"  {meta['output_dir']}")
     return output_dir
 
 
