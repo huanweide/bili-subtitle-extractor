@@ -171,7 +171,15 @@ def fetch_video_info(bvid: str, ssl_verify: bool = True) -> dict:
     if resp.get("code") != 0:
         raise RuntimeError(f"B站 API 返回错误: code={resp.get('code')} msg={resp.get('message')}")
     data = resp["data"]
-    pages = data.get("pages", [{"cid": data["cid"], "part": data["title"], "duration": data["duration"]}])
+    pages = data.get("pages")
+    if not pages:
+        # 单P视频可能没有 pages 字段；尝试从顶层 cid 取值，缺失则给出清晰错误
+        cid = data.get("cid")
+        if cid is None:
+            raise RuntimeError(
+                f"视频信息缺少 cid 字段（且无 pages 分P列表），无法定位字幕轨道: bvid={bvid}"
+            )
+        pages = [{"cid": cid, "part": data.get("title", ""), "duration": data.get("duration", 0)}]
     return {
         "bvid": bvid,
         "aid": data["aid"],
