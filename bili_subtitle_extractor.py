@@ -563,8 +563,11 @@ def extract_subtitle(
             "extractor_version": __version__,
         }
         out = save_output(output_dir, bvid, part_title, page_num, srt, txt, metadata)
+        # 将 save_output 返回的真实路径写入 metadata，
+        # 供下方缓存写入与收尾汇总复用，避免依赖缺键重建路径（IMP-007/IMP-022）。
+        metadata["output_dir"] = out
         if cache:
-            cache.set(bvid, cid, {**metadata, "output_dir": out})
+            cache.set(bvid, cid, dict(metadata))
         results.append((metadata, p))
         print(f"  ✓ 保存到: {out}")
 
