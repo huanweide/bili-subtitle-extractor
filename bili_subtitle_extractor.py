@@ -56,12 +56,19 @@ _YTDLP_AVAILABLE = None
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+# SSL 上下文按校验开关缓存复用，避免每次请求都新建。
+_SSL_CONTEXTS: dict[bool, ssl.SSLContext] = {}
+
+
 def build_ssl_context(verify: bool = True) -> ssl.SSLContext:
-    """创建 SSL 上下文，默认验证证书。"""
-    ctx = ssl.create_default_context()
-    if not verify:
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+    """创建（并缓存）SSL 上下文，默认验证证书。"""
+    ctx = _SSL_CONTEXTS.get(verify)
+    if ctx is None:
+        ctx = ssl.create_default_context()
+        if not verify:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        _SSL_CONTEXTS[verify] = ctx
     return ctx
 
 
@@ -78,6 +85,13 @@ def http_get(url: str, headers: dict | None = None, timeout: int = 30,
     ctx = build_ssl_context(ssl_verify)
     with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
         return resp.read()
+
+
+def http_get_json(url: str, headers: dict | None = None, timeout: int = 30,
+                  ssl_verify: bool = True) -> dict:
+    """HTTP GET 并解析 JSON，收敛散落的 json.loads(http_get(...))。"""
+    return json.loads(http_get(url, headers=headers, timeout=timeout,
+                              ssl_verify=ssl_verify))
 
 
 def http_post_json(url: str, data: bytes, headers: dict | None = None,
@@ -167,7 +181,7 @@ class Cache:
 def fetch_video_info(bvid: str, ssl_verify: bool = True) -> dict:
     """获取视频元信息（含分P列表）。"""
     url = f"{BILI_API_VIDEO_INFO}?bvid={bvid}"
-    resp = json.loads(http_get(url, ssl_verify=ssl_verify))
+    resp = http_get_json(url, ssl_verify=ssl_verify)
     if resp.get("code") != 0:
         raise RuntimeError(f"B站 API 返回错误: code={resp.get('code')} msg={resp.get('message')}")
     data = resp["data"]
@@ -201,7 +215,7 @@ def fetch_video_info(bvid: str, ssl_verify: bool = True) -> dict:
 def fetch_subtitle_list(bvid: str, cid: int, ssl_verify: bool = True) -> list[dict]:
     """获取字幕列表。"""
     url = f"{BILI_API_PLAYER}?bvid={bvid}&cid={cid}"
-    resp = json.loads(http_get(url, ssl_verify=ssl_verify))
+    resp = http_get_json(url, ssl_verify=ssl_verify)
     data = resp.get("data", {})
     return data.get("subtitle", {}).get("subtitles", [])
 
@@ -210,7 +224,7 @@ def download_subtitle_json(subtitle_url: str, ssl_verify: bool = True) -> tuple[
     """下载字幕 JSON，返回 (纯文本, 原始body列表)。"""
     if subtitle_url.startswith("//"):
         subtitle_url = "https:" + subtitle_url
-    body = json.loads(http_get(subtitle_url, ssl_verify=ssl_verify)).get("body", [])
+    body = http_get_json(subtitle_url, ssl_verify=ssl_verify).get("body", [])
     lines = [item.get("content", "") for item in body if item.get("content")]
     return "\n".join(lines), body
 
@@ -236,7 +250,7 @@ def find_best_subtitle(subtitles: list[dict]) -> dict | None:
 def fetch_audio_url(bvid: str, cid: int, ssl_verify: bool = True) -> dict | None:
     """从 DASH API 获取最高音质音频流 URL。"""
     url = f"{BILI_API_PLAYURL}?bvid={bvid}&cid={cid}&fnval=4048&fnver=0&fourk=1"
-    resp = json.loads(http_get(url, ssl_verify=ssl_verify))
+    resp = http_get_json(url, ssl_verify=ssl_verify)
     data = resp.get("data", {})
     dash = data.get("dash", {})
     audios = dash.get("audio", [])
@@ -273,7 +287,7 @@ def download_audio_direct(audio_url: str, output_path: str, ssl_verify: bool = T
         downloaded = existing
         with open(output_path, mode) as f:
             while True:
-                chunk = resp.read(8192 * 1024)  # 8MB 块
+                chunk = resp.read(1024 * 1024)  # 1MB 块，进度更平滑
                 if not chunk:
                     break
                 f.write(chunk)
