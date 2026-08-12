@@ -203,7 +203,7 @@ def download_subtitle_json(subtitle_url: str, ssl_verify: bool = True) -> tuple[
     if subtitle_url.startswith("//"):
         subtitle_url = "https:" + subtitle_url
     body = json.loads(http_get(subtitle_url, ssl_verify=ssl_verify)).get("body", [])
-    lines = [item["content"] for item in body if item.get("content")]
+    lines = [item.get("content", "") for item in body if item.get("content")]
     return "\n".join(lines), body
 
 
@@ -244,19 +244,26 @@ def fetch_audio_url(bvid: str, cid: int, ssl_verify: bool = True) -> dict | None
 
 
 def download_audio_direct(audio_url: str, output_path: str, ssl_verify: bool = True):
-    """直接通过 HTTP 下载音频。"""
+    """直接通过 HTTP 下载音频，支持断点续传。"""
+    existing = os.path.getsize(output_path) if os.path.exists(output_path) else 0
     headers = {
         "User-Agent": UA,
         "Referer": "https://www.bilibili.com",
         "Origin": "https://www.bilibili.com",
-        "Range": "bytes=0-",  # 支持断点续传
     }
+    if existing > 0:
+        headers["Range"] = f"bytes={existing}-"
     req = urllib.request.Request(audio_url, headers=headers)
     ctx = build_ssl_context(ssl_verify)
     with urllib.request.urlopen(req, timeout=600, context=ctx) as resp:
-        total = int(resp.headers.get("Content-Length", 0))
-        downloaded = 0
-        with open(output_path, "wb") as f:
+        # 若服务端不支持 Range（返回 200），从头覆盖原文件
+        if existing > 0 and resp.status == 200:
+            existing = 0
+        mode = "ab" if existing > 0 else "wb"
+        remaining = int(resp.headers.get("Content-Length", 0) or 0)
+        total = existing + remaining if remaining else 0
+        downloaded = existing
+        with open(output_path, mode) as f:
             while True:
                 chunk = resp.read(8192 * 1024)  # 8MB 块
                 if not chunk:
@@ -309,6 +316,21 @@ def transcribe_siliconflow(audio_path: str, api_key: str,
     with open(audio_path, "rb") as f:
         file_data = f.read()
 
+    ext = os.path.splitext(audio_path)[1].lower().lstrip(".")
+    mime_map = {
+        "m4a": "audio/mp4",
+        "m4s": "audio/mp4",
+        "mp4": "audio/mp4",
+        "opus": "audio/ogg",
+        "ogg": "audio/ogg",
+        "webm": "audio/webm",
+        "mp3": "audio/mpeg",
+        "aac": "audio/aac",
+        "mka": "audio/x-matroska",
+    }
+    content_type = mime_map.get(ext, "audio/mp4")
+    file_name = f"audio.{ext}" if ext else "audio.m4a"
+
     boundary = "----" + uuid.uuid4().hex
     parts = [
         f"--{boundary}",
@@ -316,8 +338,8 @@ def transcribe_siliconflow(audio_path: str, api_key: str,
         "",
         model,
         f"--{boundary}",
-        f'Content-Disposition: form-data; name="file"; filename="audio.m4a"',
-        "Content-Type: audio/mp4",
+        f'Content-Disposition: form-data; name="file"; filename="{file_name}"',
+        f"Content-Type: {content_type}",
         "",
     ]
     body = ("\r\n".join(parts) + "\r\n").encode()
