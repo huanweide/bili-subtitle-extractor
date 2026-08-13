@@ -72,8 +72,17 @@ def build_ssl_context(verify: bool = True) -> ssl.SSLContext:
     return ctx
 
 
+def _urlopen(req, timeout, ctx, proxy=None):
+    """统一打开请求：有代理用 ProxyHandler，否则直连。返回可 with 的资源。"""
+    if proxy:
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({"http": proxy, "https": proxy}))
+        return opener.open(req, timeout=timeout, context=ctx)
+    return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
+
 def http_get(url: str, headers: dict | None = None, timeout: int = 30,
-             ssl_verify: bool = True) -> bytes:
+             ssl_verify: bool = True, proxy: str | None = None) -> bytes:
     """HTTP GET，返回响应体字节。"""
     if headers is None:
         headers = {
@@ -83,15 +92,15 @@ def http_get(url: str, headers: dict | None = None, timeout: int = 30,
         }
     req = urllib.request.Request(url, headers=headers)
     ctx = build_ssl_context(ssl_verify)
-    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+    with _urlopen(req, timeout, ctx, proxy) as resp:
         return resp.read()
 
 
 def http_get_json(url: str, headers: dict | None = None, timeout: int = 30,
-                  ssl_verify: bool = True) -> dict:
+                  ssl_verify: bool = True, proxy: str | None = None) -> dict:
     """HTTP GET 并解析 JSON，收敛散落的 json.loads(http_get(...))。"""
     return json.loads(http_get(url, headers=headers, timeout=timeout,
-                              ssl_verify=ssl_verify))
+                              ssl_verify=ssl_verify, proxy=proxy))
 
 
 def http_post_json(url: str, data: bytes, headers: dict | None = None,
@@ -178,10 +187,11 @@ class Cache:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def fetch_video_info(bvid: str, ssl_verify: bool = True) -> dict:
+def fetch_video_info(bvid: str, ssl_verify: bool = True,
+                     proxy: str | None = None) -> dict:
     """获取视频元信息（含分P列表）。"""
     url = f"{BILI_API_VIDEO_INFO}?bvid={bvid}"
-    resp = http_get_json(url, ssl_verify=ssl_verify)
+    resp = http_get_json(url, ssl_verify=ssl_verify, proxy=proxy)
     if resp.get("code") != 0:
         raise RuntimeError(f"B站 API 返回错误: code={resp.get('code')} msg={resp.get('message')}")
     data = resp["data"]
@@ -212,10 +222,11 @@ def fetch_video_info(bvid: str, ssl_verify: bool = True) -> dict:
     }
 
 
-def fetch_subtitle_list(bvid: str, cid: int, ssl_verify: bool = True) -> list[dict]:
+def fetch_subtitle_list(bvid: str, cid: int, ssl_verify: bool = True,
+                         proxy: str | None = None) -> list[dict]:
     """获取字幕列表。"""
     url = f"{BILI_API_PLAYER}?bvid={bvid}&cid={cid}"
-    resp = http_get_json(url, ssl_verify=ssl_verify)
+    resp = http_get_json(url, ssl_verify=ssl_verify, proxy=proxy)
     data = resp.get("data", {})
     return data.get("subtitle", {}).get("subtitles", [])
 
@@ -247,16 +258,17 @@ def find_best_subtitle(subtitles: list[dict]) -> dict | None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def fetch_audio_url(bvid: str, cid: int, ssl_verify: bool = True) -> dict | None:
-    """从 DASH API 获取最高音质音频流 URL。"""
+def fetch_audio_url(bvid: str, cid: int, ssl_verify: bool = True,
+                    proxy: str | None = None) -> dict | None:
+    """从 DASH API 获取最低码率音频流 URL（ASR 不需要高音质，省时省流量）。"""
     url = f"{BILI_API_PLAYURL}?bvid={bvid}&cid={cid}&fnval=4048&fnver=0&fourk=1"
-    resp = http_get_json(url, ssl_verify=ssl_verify)
+    resp = http_get_json(url, ssl_verify=ssl_verify, proxy=proxy)
     data = resp.get("data", {})
     dash = data.get("dash", {})
     audios = dash.get("audio", [])
     if not audios:
         return None
-    best = max(audios, key=lambda a: a.get("bandwidth", 0))
+    best = min(audios, key=lambda a: a.get("bandwidth", 0))
     return {
         "url": best["baseUrl"],
         "bandwidth": best.get("bandwidth", 0),
@@ -265,7 +277,8 @@ def fetch_audio_url(bvid: str, cid: int, ssl_verify: bool = True) -> dict | None
     }
 
 
-def download_audio_direct(audio_url: str, output_path: str, ssl_verify: bool = True):
+def download_audio_direct(audio_url: str, output_path: str, ssl_verify: bool = True,
+                           proxy: str | None = None):
     """直接通过 HTTP 下载音频，支持断点续传。"""
     existing = os.path.getsize(output_path) if os.path.exists(output_path) else 0
     headers = {
@@ -277,7 +290,7 @@ def download_audio_direct(audio_url: str, output_path: str, ssl_verify: bool = T
         headers["Range"] = f"bytes={existing}-"
     req = urllib.request.Request(audio_url, headers=headers)
     ctx = build_ssl_context(ssl_verify)
-    with urllib.request.urlopen(req, timeout=600, context=ctx) as resp:
+    with _urlopen(req, 600, ctx, proxy) as resp:
         # 若服务端不支持 Range（返回 200），从头覆盖原文件
         if existing > 0 and resp.status == 200:
             existing = 0
@@ -333,7 +346,9 @@ def download_audio_ytdlp(bvid: str, output_path: str, proxy: str | None = None):
 
 
 def transcribe_siliconflow(audio_path: str, api_key: str,
-                           model: str = SILICONFLOW_ASR_MODEL) -> tuple[str, dict]:
+                           model: str = SILICONFLOW_ASR_MODEL,
+                           proxy: str | None = None,
+                           ssl_verify: bool = True) -> tuple[str, dict]:
     """用硅基流动 SenseVoiceSmall 转写音频（multipart 上传）。"""
     with open(audio_path, "rb") as f:
         file_data = f.read()
@@ -376,7 +391,8 @@ def transcribe_siliconflow(audio_path: str, api_key: str,
             "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
     )
-    with urllib.request.urlopen(req, timeout=300) as resp:
+    ctx = build_ssl_context(ssl_verify)
+    with _urlopen(req, 300, ctx, proxy) as resp:
         result = json.loads(resp.read())
     return result.get("text", ""), result
 
@@ -486,14 +502,14 @@ def extract_subtitle(
         page: 分P页码（1-based），或 "all" 提取所有分P
         asr_key: 硅基流动 API Key（无字幕时 ASR 需要）
         asr_model: ASR 模型名
-        proxy: HTTP 代理地址（yt-dlp 模式使用）
+        proxy: HTTP 代理地址（所有下载与 API 请求均生效，不再仅限 yt-dlp）
         use_ytdlp: 强制使用 yt-dlp 下载音频
         ssl_verify: 是否验证 SSL 证书
         cache: 缓存实例
     """
     # ── 1. 获取视频信息 ──
     print(f"[1/5] 获取视频信息...")
-    info = fetch_video_info(bvid, ssl_verify=ssl_verify)
+    info = fetch_video_info(bvid, ssl_verify=ssl_verify, proxy=proxy)
     print(f"  标题: {info['title'][:60]}")
     print(f"  UP主: {info['author']}  |  分P数: {len(info['pages'])}")
 
@@ -523,7 +539,7 @@ def extract_subtitle(
 
         # ── 2. 检测字幕 ──
         print(f"[2/5] 检测字幕...")
-        subs = fetch_subtitle_list(bvid, cid, ssl_verify=ssl_verify)
+        subs = fetch_subtitle_list(bvid, cid, ssl_verify=ssl_verify, proxy=proxy)
         target = find_best_subtitle(subs)
 
         if target and target.get("subtitle_url"):
@@ -545,10 +561,10 @@ def extract_subtitle(
             if use_ytdlp:
                 download_audio_ytdlp(bvid, audio_path, proxy)
             else:
-                audio_info = fetch_audio_url(bvid, cid, ssl_verify=ssl_verify)
+                audio_info = fetch_audio_url(bvid, cid, ssl_verify=ssl_verify, proxy=proxy)
                 if not audio_info:
                     raise RuntimeError("无法获取 DASH 音频流，请尝试 --use-yt-dlp")
-                download_audio_direct(audio_info["url"], audio_path, ssl_verify=ssl_verify)
+                download_audio_direct(audio_info["url"], audio_path, ssl_verify=ssl_verify, proxy=proxy)
             size_mb = os.path.getsize(audio_path) / 1024 / 1024
             print(f"  完成: {size_mb:.1f}MB")
 
@@ -559,7 +575,8 @@ def extract_subtitle(
                     "无字幕，需要 ASR 转写。请设置环境变量 SILICONFLOW_API_KEY "
                     "或传参 --asr-key"
                 )
-            txt, raw_result = transcribe_siliconflow(audio_path, asr_key, asr_model)
+            txt, raw_result = transcribe_siliconflow(audio_path, asr_key, asr_model,
+                                                      proxy=proxy, ssl_verify=ssl_verify)
             srt, _ = asr_text_to_srt(txt)
             print(f"  识别文本: {txt[:100]}...")
             source = "asr_siliconflow"
@@ -661,7 +678,7 @@ def main():
     try:
         # --list 模式
         if args.list:
-            info = fetch_video_info(bvid, ssl_verify=ssl_verify)
+            info = fetch_video_info(bvid, ssl_verify=ssl_verify, proxy=proxy)
             print(f"标题: {info['title']}")
             print(f"UP主: {info['author']}")
             print(f"分P数: {len(info['pages'])}")
