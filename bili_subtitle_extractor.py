@@ -99,8 +99,12 @@ def http_get(url: str, headers: dict | None = None, timeout: int = 30,
 def http_get_json(url: str, headers: dict | None = None, timeout: int = 30,
                   ssl_verify: bool = True, proxy: str | None = None) -> dict:
     """HTTP GET 并解析 JSON，收敛散落的 json.loads(http_get(...))。"""
-    return json.loads(http_get(url, headers=headers, timeout=timeout,
-                              ssl_verify=ssl_verify, proxy=proxy))
+    raw = http_get(url, headers=headers, timeout=timeout,
+                   ssl_verify=ssl_verify, proxy=proxy)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError(f"JSON 解析失败（{url}）：响应非合法 JSON，前 200 字节：{raw[:200]!r}")
 
 
 def http_post_json(url: str, data: bytes, headers: dict | None = None,
@@ -108,7 +112,11 @@ def http_post_json(url: str, data: bytes, headers: dict | None = None,
     """HTTP POST JSON，返回解析后的 dict。"""
     req = urllib.request.Request(url, data=data, headers=headers or {})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read())
+        raw = resp.read()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError(f"JSON 解析失败（POST {url}）：前 200 字节：{raw[:200]!r}")
 
 
 def safe_filename(s: str, max_len: int = 50) -> str:
@@ -393,7 +401,11 @@ def transcribe_siliconflow(audio_path: str, api_key: str,
     )
     ctx = build_ssl_context(ssl_verify)
     with _urlopen(req, 300, ctx, proxy) as resp:
-        result = json.loads(resp.read())
+        raw = resp.read()
+    try:
+        result = json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError(f"JSON 解析失败（ASR {SILICONFLOW_ASR_URL}）：前 200 字节：{raw[:200]!r}")
     return result.get("text", ""), result
 
 
