@@ -12,6 +12,13 @@
 
 **输出 SRT + TXT 双格式**，纯 Python 标准库，零强制依赖。
 
+> **📦 便携性速览**
+>
+> - **纯 Python 标准库，零强制依赖**：核心功能 Python 3.10+ 即跑，无需 `pip install`。
+> - 可选 `yt-dlp` 增强音频下载；无字幕时 AI 转写需自备硅基流动 Key。
+> - 输入 BV 号，输出 SRT + TXT + JSON 三件套。
+
+
 ## 功能
 
 - 自动检测 B站 AI 字幕 / 上传字幕，有就直接下载
@@ -138,3 +145,12 @@ MIT
 ## 许可证
 
 详见 [LICENSE](LICENSE)。
+---
+
+## 🧰 更多开源工具（by ReTri · 樊斯瑞）
+
+- 🎬 字幕 / 视频：[bili-subtitle-universal](https://github.com/huanweide/bili-subtitle-universal) · [live-subtitle](https://github.com/huanweide/live-subtitle) · [zhihuishu-helper](https://github.com/huanweide/zhihuishu-helper) · [video-brief](https://github.com/huanweide/video-brief)
+- 🩺 代码健康全家桶（18 轴零依赖 CLI）：[family-showcase](https://github.com/huanweide/family-showcase)
+- 🔧 命令行利器：[idiot-index](https://github.com/huanweide/idiot-index) · [recall-cli](https://github.com/huanweide/recall-cli) · [forge-safeguard](https://github.com/huanweide/forge-safeguard-20260812)
+- 🖥️ 桌面 / 资讯：[floatsnip](https://github.com/huanweide/floatsnip) · [tech-news-hub](https://github.com/huanweide/tech-news-hub)
+- 📦 全部仓库：<https://github.com/huanweide?tab=repositories>
