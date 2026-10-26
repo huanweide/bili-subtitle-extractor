@@ -13,7 +13,7 @@ jobs:
         # 全部用例不联网：网络抖动不该把 CI 刷红。
         python: ['3.12', '3.13']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
