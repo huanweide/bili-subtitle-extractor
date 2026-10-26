@@ -4,14 +4,27 @@ on: [push, pull_request]
 
 jobs:
   check:
+    name: Python ${{ matrix.python }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 / 3.13 是本仓 README 声明支持的版本区间的两端，本地均已跑通。
+        # 全部用例不联网：网络抖动不该把 CI 刷红。
+        python: ['3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: ${{ matrix.python }}
       - name: Syntax check
         run: python -m compileall -q .
+      - name: Unit tests (33 assertions, no network)
+        run: python tests/test_extractor.py
+      - name: CLI smoke (version / help)
+        run: |
+          python bili_subtitle_extractor.py --version
+          python bili_subtitle_extractor.py --help > /dev/null
       - name: Lint (informational)
         # ruff lint is informational; do not fail the build on style findings
         continue-on-error: true
