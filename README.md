@@ -2,9 +2,13 @@
 [![License](https://img.shields.io/github/license/huanweide/bili-subtitle-extractor)](LICENSE)
 [![CI](https://github.com/huanweide/bili-subtitle-extractor/actions/workflows/ci.yml/badge.svg)](https://github.com/huanweide/bili-subtitle-extractor/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/huanweide/bili-subtitle-extractor)](https://github.com/huanweide/bili-subtitle-extractor/stargazers)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Deps](https://img.shields.io/badge/deps-zero--stdlib--core-4ecca3)](https://github.com/huanweide/bili-subtitle-extractor)
 <!-- /badges -->
 
 # B站字幕提取工具
+
+> **English TL;DR:** A zero-dependency Python CLI that downloads Bilibili subtitles by BV id — grabs official CC/subtitle tracks directly, or transcribes audio via ASR when none exist. Outputs **SRT + TXT + JSON**. No browser, no Tampermonkey, built for batch jobs.
 
 > 姊妹项目：本工具是「命令行批量下载 / AI 语音转文字」形态。如果你想要**在浏览器里点一下就提取字幕**（零配置、无需 Key），请用 [bili-subtitle](https://github.com/huanweide/bili-subtitle)（篡改猴插件版）。
 
@@ -18,6 +22,18 @@
 > - 可选 `yt-dlp` 增强音频下载；无字幕时 AI 转写需自备硅基流动 Key。
 > - 输入 BV 号，输出 SRT + TXT + JSON 三件套。
 
+
+## 为什么用命令行版（而不是浏览器插件）
+
+| | 本工具（CLI） | [bili-subtitle-universal](https://github.com/huanweide/bili-subtitle-universal)（插件） |
+|---|---|---|
+| 形态 | Python 脚本，终端跑 | 油猴脚本，浏览器里点一下 |
+| 批量 | 一条命令处理多个 BV / 多分P | 单次当前页面 |
+| 依赖 | 仅 Python 3.10+ 标准库（可选 yt-dlp） | 需装 Tampermonkey + 浏览器 |
+| 自动化 | 可写进脚本 / 定时任务 / CI | 需人工在页面操作 |
+| 选它当 | 你要**批量、离线、可脚本化**下载字幕 | 你只想**随手在网页上点一下**提取 |
+
+> 两条线同源，按使用场景选：要批量 / 自动化用本工具，要零配置随手用用插件。
 
 ## 功能
 
