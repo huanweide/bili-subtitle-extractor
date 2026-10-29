@@ -273,7 +273,6 @@ MIT — see [LICENSE](LICENSE). Bilibili-related names belong to their respectiv
 ## ⭐ Star
 
 If this tool saved you from scraping subtitles by hand once, **a star is the best thank-you**.
-Voluntary WeChat sponsorship QR: `sponsor/wechat-qr.png` (a static image, contains no keys).
 
 **Author:** ReTri ([@huanweide](https://github.com/huanweide)) · MIT
 

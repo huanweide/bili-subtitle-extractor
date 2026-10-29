@@ -316,9 +316,8 @@ MIT — 详见 [LICENSE](LICENSE)。B 站相关名称归其各自所有者。
 ## ⭐ Star
 
 如果这个工具帮你省下了一次手动扒字幕的时间，**点个 Star 就是最好的回报**。
-也可微信扫码自愿赞助（收款码见 `sponsor/wechat-qr.png`，纯静态图片、不含任何密钥）。
 
-**作者**：ReTri · 樊斯瑞（[@huanweide](https://github.com/huanweide)）· MIT
+**作者**：ReTri · huanweide（[@huanweide](https://github.com/huanweide)）· MIT
 
 **同一作者的其他工具**：
 
