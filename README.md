@@ -13,7 +13,6 @@
 [![tests](https://img.shields.io/badge/tests-33%2F33-3a8ee6)](tests/test_extractor.py)
 [![Deps](https://img.shields.io/badge/deps-zero--stdlib--core-4ecca3)](https://github.com/huanweide/bili-subtitle-extractor)
 
-**EN:** [README_EN.md](README_EN.md) · A zero-dependency Python CLI: BV id in, SRT + TXT + JSON out.
 
 **自动流程**：`BV 号 / URL → 拉视频信息与分P → 检测字幕 →（有）下载解析 →（无）下音频 → ASR 转写 → 落盘三件套`
 
