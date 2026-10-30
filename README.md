@@ -16,7 +16,7 @@
 
 **自动流程**：`BV 号 / URL → 拉视频信息与分P → 检测字幕 →（有）下载解析 →（无）下音频 → ASR 转写 → 落盘三件套`
 
-[30 秒看懂](#-30-秒看懂) · [它能做什么](#它能做什么) · [特性](#特性-features) · [快速开始](#快速开始-quick-start) · [CLI 速查](#cli-命令速查) · [架构](#架构-architecture) · [选哪个](#-python-还是-js) · [路线图](#路线图-roadmap)
+[30 秒看懂](#30-秒看懂) · [它能做什么](#它能做什么) · [特性](#特性-features) · [快速开始](#快速开始-quick-start) · [CLI 速查](#cli-命令速查) · [架构](#架构-architecture) · [选哪个](#python-还是-js) · [路线图](#路线图-roadmap)
 
 ---
 
@@ -252,7 +252,7 @@ def save_output(output_dir, bvid, title, page_num, srt_content, txt_content, met
 
 ---
 
-## 🐍 Python 还是 🎬 JS？
+## Python 还是 JS
 
 同一作者维护两个 B 站字幕项目，**定位不重叠，别选错**：
 
@@ -316,7 +316,7 @@ MIT — 详见 [LICENSE](LICENSE)。B 站相关名称归其各自所有者。
 
 如果这个工具帮你省下了一次手动扒字幕的时间，**点个 Star 就是最好的回报**。
 
-**作者**：ReTri · huanweide（[@huanweide](https://github.com/huanweide)）· MIT
+**作者**：huanweide（[@huanweide](https://github.com/huanweide)）· MIT
 
 **同一作者的其他工具**：
 
