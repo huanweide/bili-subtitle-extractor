@@ -20,6 +20,11 @@
 
 ---
 
+## 谁该用 / 谁先别用
+
+- **该用**：想一条命令批量抓一整个 B 站合集字幕、要能写进脚本 / 定时任务 / CI 的人；只想跟 B 站、不碰浏览器的人。
+- **先别用**：想在浏览器里随手点一下、还要覆盖 YouTube / 任意网页 `<video>` 的人——那是 [bili-subtitle-universal](https://github.com/huanweide/bili-subtitle-universal) 的活；需要图形面板、实时字幕流的也更适合 universal 版。
+
 ## 🎯 30 秒看懂
 
 ```text
