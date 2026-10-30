@@ -2,6 +2,8 @@
   <img src="assets/banner.svg" alt="bili-subtitle-extractor — B站字幕提取命令行版">
 </p>
 
+**English** · [README_EN.md](./README_EN.md)
+
 # 🐍 B站字幕提取器 · 命令行版
 
 > **BV 号进去，SRT + TXT + JSON 出来。**
@@ -19,11 +21,6 @@
 [30 秒看懂](#30-秒看懂) · [它能做什么](#它能做什么) · [特性](#特性-features) · [快速开始](#快速开始-quick-start) · [CLI 速查](#cli-命令速查) · [架构](#架构-architecture) · [选哪个](#python-还是-js) · [路线图](#路线图-roadmap)
 
 ---
-
-## 谁该用 / 谁先别用
-
-- **该用**：想一条命令批量抓一整个 B 站合集字幕、要能写进脚本 / 定时任务 / CI 的人；只想跟 B 站、不碰浏览器的人。
-- **先别用**：想在浏览器里随手点一下、还要覆盖 YouTube / 任意网页 `<video>` 的人——那是 [bili-subtitle-universal](https://github.com/huanweide/bili-subtitle-universal) 的活；需要图形面板、实时字幕流的也更适合 universal 版。
 
 ## 🎯 30 秒看懂
 
